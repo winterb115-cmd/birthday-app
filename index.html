@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
+<!-- PWA & iOS 메타태그 -->
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="생일알림"/>
+<meta name="theme-color" content="#ff4081"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="application-name" content="생일알림"/>
+<meta name="format-detection" content="telephone=no"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.svg"/>
+<!-- iOS 스플래시 스크린 색상 -->
+<meta name="msapplication-TileColor" content="#ff4081"/>
+<title>캐릭터 생일 알림</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+@keyframes rainbowBorder{0%{border-color:#ff0000;box-shadow:0 0 20px #ff000066}16%{border-color:#ff8800;box-shadow:0 0 20px #ff880066}33%{border-color:#ffff00;box-shadow:0 0 20px #ffff0066}50%{border-color:#00ff00;box-shadow:0 0 20px #00ff0066}66%{border-color:#0088ff;box-shadow:0 0 20px #0088ff66}83%{border-color:#8800ff;box-shadow:0 0 20px #8800ff66}100%{border-color:#ff0000;box-shadow:0 0 20px #ff000066}}
+@keyframes bounce{0%{transform:scale(1)}30%{transform:scale(.85)}50%{transform:scale(1.15)}70%{transform:scale(.95)}100%{transform:scale(1)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.bounce-click{animation:bounce .4s ease}
+.rainbow-border{border:3px solid #ff0000;animation:rainbowBorder 3s linear infinite}
+.fade-in{animation:fadeIn .4s ease-out forwards}
+.glass{background:rgba(255,255,255,.15);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.3)}
+.glass-strong{background:rgba(255,255,255,.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.5)}
+.stage-bg{background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,.03) 20px,rgba(255,255,255,.03) 21px),repeating-linear-gradient(-45deg,transparent,transparent 20px,rgba(255,255,255,.03) 20px,rgba(255,255,255,.03) 21px),linear-gradient(135deg,#fce4ec 0%,#e8eaf6 25%,#e0f7fa 50%,#fff3e0 75%,#f3e5f5 100%);min-height:100vh}
+body{margin:0;font-family:'Segoe UI',-apple-system,BlinkMacSystemFont,sans-serif;-webkit-tap-highlight-color:transparent;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+*{box-sizing:border-box}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useCallback,useMemo}=React;
+
+// ─── SVG ICONS (no lucide-react) ────────────────────────
+const Icon=({d,size=20,color='currentColor',style={}})=>(
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',verticalAlign:'middle',...style}}>
+    <path d={d}/>
+  </svg>
+);
+const IconHome=p=><Icon {...p} d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10"/>;
+const IconSettings=p=>(
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke={p.color||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',verticalAlign:'middle',...(p.style||{})}}>
+    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+  </svg>
+);
+const IconBell=p=><Icon {...p} d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0"/>;
+const IconCake=p=>(
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke={p.color||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',verticalAlign:'middle',...(p.style||{})}}>
+    <path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/>
+  </svg>
+);
+const IconSparkles=p=>(
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke={p.color||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',verticalAlign:'middle',...(p.style||{})}}>
+    <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>
+  </svg>
+);
+const IconChevronDown=p=><Icon {...p} d="M6 9l6 6 6-6"/>;
+const IconChevronRight=p=><Icon {...p} d="M9 18l6-6-6-6"/>;
+const IconParty=p=><span style={{fontSize:p.size||20,...(p.style||{})}}>🎉</span>;
+
+// ─── DATA ───────────────────────────────────────────────
+const AGENCIES=[
+{id:'AG001',name:'Star Maker Production',unitIds:['UN001','UN002','UN003','UN004']},
+{id:'AG002',name:'Cosmic Production',unitIds:['UN005','UN006','UN007','UN008']},
+{id:'AG003',name:'Rhythm Link',unitIds:['UN009','UN010','UN011','UN012']},
+{id:'AG004',name:'New Dimention',unitIds:['UN013','UN014','UN015','UN016']},
+{id:'AG005',name:'Other',unitIds:['UN017','UN018']},
+];
+const UNITS=[
+{id:'UN001',name:'fine',agencyId:'AG001',characterIds:['CH001','CH002','CH003','CH004']},
+{id:'UN002',name:'Trickstar',agencyId:'AG001',characterIds:['CH005','CH006','CH007','CH008']},
+{id:'UN003',name:'유성대',agencyId:'AG001',characterIds:['CH009','CH010','CH011','CH012','CH013']},
+{id:'UN004',name:'ALKALOID',agencyId:'AG001',characterIds:['CH014','CH015','CH016','CH017']},
+{id:'UN005',name:'Eden',agencyId:'AG002',characterIds:['CH018','CH019','CH020','CH021']},
+{id:'UN006',name:'Valkyrie',agencyId:'AG002',characterIds:['CH022','CH023']},
+{id:'UN007',name:'2wink',agencyId:'AG002',characterIds:['CH024','CH025']},
+{id:'UN008',name:'Crazy:B',agencyId:'AG002',characterIds:['CH026','CH027','CH028','CH029']},
+{id:'UN009',name:'UNDEAD',agencyId:'AG003',characterIds:['CH030','CH031','CH032','CH033']},
+{id:'UN010',name:'Ra*bits',agencyId:'AG003',characterIds:['CH034','CH035','CH036','CH037']},
+{id:'UN011',name:'홍월',agencyId:'AG003',characterIds:['CH038','CH039','CH040','CH041']},
+{id:'UN012',name:'MELLOW DEAR US',agencyId:'AG003',characterIds:['CH042','CH043','CH044','CH045']},
+{id:'UN013',name:'Knights',agencyId:'AG004',characterIds:['CH046','CH047','CH048','CH049','CH050']},
+{id:'UN014',name:'Switch',agencyId:'AG004',characterIds:['CH051','CH052','CH053']},
+{id:'UN015',name:'MaM',agencyId:'AG004',characterIds:['CH054']},
+{id:'UN016',name:'Special for Princess!',agencyId:'AG004',characterIds:['CH055','CH056','CH057','CH058']},
+{id:'UN017',name:'teacher',agencyId:'AG005',characterIds:['CH059','CH060']},
+{id:'UN018',name:'producer',agencyId:'AG005',characterIds:['CH061']},
+];
+const CHARACTERS=[
+{id:'CH001',name:'텐쇼인 에이치',birthday:{month:1,day:10},agencyId:'AG001',unitId:'UN001'},
+{id:'CH002',name:'히비키 와타루',birthday:{month:2,day:21},agencyId:'AG001',unitId:'UN001'},
+{id:'CH003',name:'히메미야 토리',birthday:{month:1,day:13},agencyId:'AG001',unitId:'UN001'},
+{id:'CH004',name:'후시미 유즈루',birthday:{month:10,day:18},agencyId:'AG001',unitId:'UN001'},
+{id:'CH005',name:'히다카 호쿠토',birthday:{month:12,day:17},agencyId:'AG001',unitId:'UN002'},
+{id:'CH006',name:'아케호시 스바루',birthday:{month:6,day:22},agencyId:'AG001',unitId:'UN002'},
+{id:'CH007',name:'유우키 마코토',birthday:{month:4,day:30},agencyId:'AG001',unitId:'UN002'},
+{id:'CH008',name:'이사라 마오',birthday:{month:3,day:16},agencyId:'AG001',unitId:'UN002'},
+{id:'CH009',name:'냐구모 테토라',birthday:{month:6,day:15},agencyId:'AG001',unitId:'UN003'},
+{id:'CH010',name:'타카미네 미도리',birthday:{month:8,day:29},agencyId:'AG001',unitId:'UN003'},
+{id:'CH011',name:'센고쿠 시노부',birthday:{month:6,day:9},agencyId:'AG001',unitId:'UN003'},
+{id:'CH012',name:'모리사와 치아키',birthday:{month:9,day:18},agencyId:'AG001',unitId:'UN003'},
+{id:'CH013',name:'신카이 카나타',birthday:{month:8,day:30},agencyId:'AG001',unitId:'UN003'},
+{id:'CH014',name:'아마기 히이로',birthday:{month:1,day:4},agencyId:'AG001',unitId:'UN004'},
+{id:'CH015',name:'시라토리 아이라',birthday:{month:11,day:27},agencyId:'AG001',unitId:'UN004'},
+{id:'CH016',name:'아야세 마요이',birthday:{month:6,day:6},agencyId:'AG001',unitId:'UN004'},
+{id:'CH017',name:'카제하야 타츠미',birthday:{month:12,day:28},agencyId:'AG001',unitId:'UN004'},
+{id:'CH018',name:'란 나기사',birthday:{month:10,day:27},agencyId:'AG002',unitId:'UN005'},
+{id:'CH019',name:'토모에 히요리',birthday:{month:7,day:24},agencyId:'AG002',unitId:'UN005'},
+{id:'CH020',name:'사에구사 이바라',birthday:{month:11,day:14},agencyId:'AG002',unitId:'UN005'},
+{id:'CH021',name:'사자나미 쥰',birthday:{month:8,day:16},agencyId:'AG002',unitId:'UN005'},
+{id:'CH022',name:'이츠키 슈',birthday:{month:10,day:30},agencyId:'AG002',unitId:'UN006'},
+{id:'CH023',name:'카게히라 미카',birthday:{month:12,day:26},agencyId:'AG002',unitId:'UN006'},
+{id:'CH024',name:'아오이 히나타',birthday:{month:3,day:5},agencyId:'AG002',unitId:'UN007'},
+{id:'CH025',name:'아오이 유우타',birthday:{month:3,day:5},agencyId:'AG002',unitId:'UN007'},
+{id:'CH026',name:'아마기 린네',birthday:{month:5,day:18},agencyId:'AG002',unitId:'UN008'},
+{id:'CH027',name:'HiMERU',birthday:{month:7,day:7},agencyId:'AG002',unitId:'UN008'},
+{id:'CH028',name:'오우카와 코하쿠',birthday:{month:2,day:5},agencyId:'AG002',unitId:'UN008'},
+{id:'CH029',name:'시이나 니키',birthday:{month:10,day:5},agencyId:'AG002',unitId:'UN008'},
+{id:'CH030',name:'사쿠마 레이',birthday:{month:11,day:2},agencyId:'AG003',unitId:'UN009'},
+{id:'CH031',name:'하카제 카오루',birthday:{month:11,day:3},agencyId:'AG003',unitId:'UN009'},
+{id:'CH032',name:'오오가미 코가',birthday:{month:7,day:18},agencyId:'AG003',unitId:'UN009'},
+{id:'CH033',name:'오토가리 아도니스',birthday:{month:8,day:29},agencyId:'AG003',unitId:'UN009'},
+{id:'CH034',name:'마시로 토모야',birthday:{month:3,day:29},agencyId:'AG003',unitId:'UN010'},
+{id:'CH035',name:'니토 나즈나',birthday:{month:4,day:27},agencyId:'AG003',unitId:'UN010'},
+{id:'CH036',name:'텐마 미츠루',birthday:{month:9,day:7},agencyId:'AG003',unitId:'UN010'},
+{id:'CH037',name:'시노 하지메',birthday:{month:7,day:15},agencyId:'AG003',unitId:'UN010'},
+{id:'CH038',name:'하스미 케이토',birthday:{month:9,day:6},agencyId:'AG003',unitId:'UN011'},
+{id:'CH039',name:'키류 쿠로',birthday:{month:1,day:26},agencyId:'AG003',unitId:'UN011'},
+{id:'CH040',name:'칸자키 소마',birthday:{month:4,day:20},agencyId:'AG003',unitId:'UN011'},
+{id:'CH041',name:'타키 이부키',birthday:{month:1,day:21},agencyId:'AG003',unitId:'UN011'},
+{id:'CH042',name:'코지카 쥬이스',birthday:{month:8,day:5},agencyId:'AG003',unitId:'UN012'},
+{id:'CH043',name:'마도카 노조미',birthday:{month:6,day:20},agencyId:'AG003',unitId:'UN012'},
+{id:'CH044',name:'쿠온 마슈',birthday:{month:12,day:14},agencyId:'AG003',unitId:'UN012'},
+{id:'CH045',name:'츠즈라 치토세',birthday:{month:11,day:19},agencyId:'AG003',unitId:'UN012'},
+{id:'CH046',name:'스오우 츠카사',birthday:{month:4,day:6},agencyId:'AG004',unitId:'UN013'},
+{id:'CH047',name:'츠키나가 레오',birthday:{month:5,day:5},agencyId:'AG004',unitId:'UN013'},
+{id:'CH048',name:'세나 이즈미',birthday:{month:11,day:2},agencyId:'AG004',unitId:'UN013'},
+{id:'CH049',name:'사쿠마 리츠',birthday:{month:9,day:22},agencyId:'AG004',unitId:'UN013'},
+{id:'CH050',name:'나루카미 아라시',birthday:{month:3,day:3},agencyId:'AG004',unitId:'UN013'},
+{id:'CH051',name:'사카사키 나츠메',birthday:{month:2,day:4},agencyId:'AG004',unitId:'UN014'},
+{id:'CH052',name:'아오바 츠무기',birthday:{month:8,day:7},agencyId:'AG004',unitId:'UN014'},
+{id:'CH053',name:'하루카와 소라',birthday:{month:7,day:1},agencyId:'AG004',unitId:'UN014'},
+{id:'CH054',name:'미케지마 마다라',birthday:{month:5,day:16},agencyId:'AG004',unitId:'UN015'},
+{id:'CH055',name:'에스',birthday:{month:9,day:12},agencyId:'AG004',unitId:'UN016'},
+{id:'CH056',name:'칸나',birthday:{month:6,day:1},agencyId:'AG004',unitId:'UN016'},
+{id:'CH057',name:'유메',birthday:{month:12,day:2},agencyId:'AG004',unitId:'UN016'},
+{id:'CH058',name:'라이카',birthday:{month:5,day:22},agencyId:'AG004',unitId:'UN016'},
+{id:'CH059',name:'사가미 진',birthday:{month:12,day:11},agencyId:'AG005',unitId:'UN017'},
+{id:'CH060',name:'쿠누기 아키오미',birthday:{month:2,day:25},agencyId:'AG005',unitId:'UN017'},
+{id:'CH061',name:'나이스 아르네브 선더',birthday:{month:9,day:3},agencyId:'AG005',unitId:'UN018'},
+];
+const UNIT_COLORS={UN001:'#FFD700',UN002:'#FF6B35',UN003:'#4CAF50',UN004:'#9C27B0',UN005:'#2196F3',UN006:'#E91E63',UN007:'#FF9800',UN008:'#F44336',UN009:'#673AB7',UN010:'#8BC34A',UN011:'#D32F2F',UN012:'#00BCD4',UN013:'#3F51B5',UN014:'#009688',UN015:'#795548',UN016:'#FF4081',UN017:'#607D8B',UN018:'#78909C'};
+const STAGES=['7days','3days','1day','dday'];
+const STAGE_LABELS={'7days':'7','3days':'3','1day':'1','dday':'D'};
+const STORAGE_KEY='birthday_notification_settings';
+const today=new Date();const currentMonth=today.getMonth()+1;const currentDay=today.getDate();
+const getUnitColor=uid=>UNIT_COLORS[uid]||'#888';
+const getUnit=uid=>UNITS.find(u=>u.id===uid);
+const getCharsByUnit=uid=>CHARACTERS.filter(c=>c.unitId===uid);
+function initDefaults(){const s={};CHARACTERS.forEach(c=>{s[c.id]={'7days':false,'3days':false,'1day':false,'dday':true}});return s}
+function loadFromStorage(){try{const r=localStorage.getItem(STORAGE_KEY);if(!r)return initDefaults();const p=JSON.parse(r);return typeof p==='object'&&p?p:initDefaults()}catch(e){return initDefaults()}}
+function saveToStorage(s){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(s))}catch(e){}}
+function computeUnitState(s,uid,stage){return getCharsByUnit(uid).every(c=>s[c.id]&&s[c.id][stage]===true)}
+
+// ─── COMPONENTS ─────────────────────────────────────────
+function ToggleBtn({isOn,label,color,onClick}){
+  const[b,setB]=useState(false);
+  return(<button onClick={()=>{setB(true);setTimeout(()=>setB(false),400);onClick()}} className={b?'bounce-click':''} style={{width:38,height:30,borderRadius:8,border:'none',cursor:'pointer',fontWeight:700,fontSize:13,transition:'all .2s',color:isOn?'#fff':'#999',background:isOn?color:'#e0e0e0',boxShadow:isOn?'0 0 15px '+color+'88, 0 2px 8px '+color+'44':'0 1px 3px rgba(0,0,0,.1)'}}>{label}</button>);
+}
+function StageRow({settings,charId,unitId,onToggle}){
+  const color=getUnitColor(unitId);
+  return(<div style={{display:'flex',gap:6}}>{STAGES.map(s=><ToggleBtn key={s} isOn={settings[charId]?settings[charId][s]:false} label={STAGE_LABELS[s]} color={color} onClick={()=>onToggle(charId,s)}/>)}</div>);
+}
+function UnitMasterRow({settings,unitId,onUnitToggle}){
+  const color=getUnitColor(unitId);
+  return(<div style={{display:'flex',gap:6}}>{STAGES.map(s=><ToggleBtn key={s} isOn={computeUnitState(settings,unitId,s)} label={STAGE_LABELS[s]} color={color} onClick={()=>onUnitToggle(unitId,s)}/>)}</div>);
+}
+
+function BirthdayCard({char:c,isBirthdayToday}){
+  const unit=getUnit(c.unitId),color=getUnitColor(c.unitId),initial=c.name.charAt(0);
+  const daysLeft=(()=>{const bd=new Date(today.getFullYear(),c.birthday.month-1,c.birthday.day);if(bd<today&&!(bd.getMonth()===today.getMonth()&&bd.getDate()===today.getDate()))bd.setFullYear(bd.getFullYear()+1);return Math.ceil((bd-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/864e5)})();
+  return(
+    <div className={'fade-in '+(isBirthdayToday?'rainbow-border':'')} style={{position:'relative',overflow:'hidden',borderRadius:16,padding:20,background:isBirthdayToday?'linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,240,245,.9))':'rgba(255,255,255,.65)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:isBirthdayToday?undefined:'1px solid rgba(255,255,255,.5)',boxShadow:isBirthdayToday?undefined:'0 4px 20px rgba(0,0,0,.06)',marginBottom:12}}>
+      <div style={{position:'absolute',top:-10,right:-5,fontSize:120,fontWeight:900,color:color,opacity:.04,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{initial}</div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',position:'relative',zIndex:1}}>
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+            {isBirthdayToday&&<IconParty size={20}/>}
+            <span style={{fontSize:18,fontWeight:700,color:'#333'}}>{c.name}</span>
+          </div>
+          <span style={{fontSize:11,fontWeight:600,padding:'2px 8px',borderRadius:20,background:color+'22',color:color,border:'1px solid '+color+'44'}}>{unit?unit.name:''}</span>
+          <div style={{fontSize:14,color:'#666',marginTop:6}}><IconCake size={14} style={{marginRight:4}}/>{c.birthday.month}월 {c.birthday.day}일</div>
+        </div>
+        <div>{isBirthdayToday?<div style={{fontSize:13,fontWeight:700,color:'#ff4081',background:'linear-gradient(135deg,#ff408122,#ff6b3522)',padding:'6px 14px',borderRadius:20}}>🎂 오늘 생일!</div>:<div style={{fontSize:13,color:'#999'}}>D-{daysLeft}</div>}</div>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard(){
+  const monthChars=useMemo(()=>CHARACTERS.filter(c=>c.birthday.month===currentMonth).sort((a,b)=>a.birthday.day-b.birthday.day),[]);
+  const todayChars=monthChars.filter(c=>c.birthday.day===currentDay);
+  const otherChars=monthChars.filter(c=>c.birthday.day!==currentDay);
+  return(
+    <div style={{padding:20,maxWidth:600,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:24}}>
+        <IconSparkles size={28} color="#ff4081"/><h1 style={{margin:0,fontSize:24,fontWeight:800,color:'#333'}}>{currentMonth}월의 주인공</h1><IconSparkles size={28} color="#ff4081"/>
+      </div>
+      {todayChars.length>0&&<div style={{marginBottom:20}}><div style={{fontSize:13,fontWeight:700,color:'#ff4081',marginBottom:10,letterSpacing:1}}>✨ TODAY'S BIRTHDAY ✨</div>{todayChars.map(c=><BirthdayCard key={c.id} char={c} isBirthdayToday={true}/>)}</div>}
+      {otherChars.length>0&&<div><div style={{fontSize:13,fontWeight:600,color:'#888',marginBottom:10}}>이번 달 생일</div>{otherChars.map(c=><BirthdayCard key={c.id} char={c} isBirthdayToday={false}/>)}</div>}
+      {monthChars.length===0&&<div className="glass-strong" style={{borderRadius:16,padding:40,textAlign:'center',color:'#999'}}><IconCake size={48} color="#ccc" style={{margin:'0 auto 12px'}}/><div style={{fontSize:16}}>이번 달에는 생일인 캐릭터가 없습니다</div></div>}
+    </div>
+  );
+}
+
+const ALARM_TIME_KEY='birthday_alarm_time';
+function loadAlarmTime(){try{const r=localStorage.getItem(ALARM_TIME_KEY);if(r){const p=JSON.parse(r);if(typeof p.hour==='number'&&typeof p.minute==='number')return p}return{hour:9,minute:0}}catch(e){return{hour:9,minute:0}}}
+function saveAlarmTime(t){try{localStorage.setItem(ALARM_TIME_KEY,JSON.stringify(t))}catch(e){}}
+const pad2=n=>String(n).padStart(2,'0');
+
+function Sidebar({selectedUnit,onSelectUnit,alarmTime,onSelectAlarmTime}){
+  const[exp,setExp]=useState(()=>new Set(AGENCIES.map(a=>a.id)));
+  const toggle=id=>{setExp(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n})};
+  const isAlarmSelected=selectedUnit==='__ALARM_TIME__';
+  return(
+    <div className="glass-strong" style={{width:240,minWidth:240,borderRadius:16,padding:12,overflowY:'auto',maxHeight:'calc(100vh - 140px)',display:'flex',flexDirection:'column'}}>
+      <div style={{fontSize:13,fontWeight:700,color:'#888',marginBottom:12,padding:'0 8px'}}>소속사 / 유닛</div>
+      <div style={{flex:1}}>
+      {AGENCIES.map(a=>{const isE=exp.has(a.id);const us=UNITS.filter(u=>u.agencyId===a.id);return(
+        <div key={a.id} style={{marginBottom:4}}>
+          <button onClick={()=>toggle(a.id)} style={{width:'100%',display:'flex',alignItems:'center',gap:6,padding:'8px 10px',border:'none',borderRadius:10,cursor:'pointer',background:'transparent',fontSize:13,fontWeight:700,color:'#555'}}>
+            {isE?<IconChevronDown size={14}/>:<IconChevronRight size={14}/>}{a.name}
+          </button>
+          {isE&&us.map(u=>{const sel=selectedUnit===u.id;const col=getUnitColor(u.id);return(
+            <button key={u.id} onClick={()=>onSelectUnit(u.id)} style={{width:'100%',display:'flex',alignItems:'center',gap:8,padding:'7px 10px 7px 28px',border:'none',borderRadius:8,cursor:'pointer',fontSize:13,fontWeight:sel?700:500,color:sel?col:'#666',background:sel?col+'15':'transparent'}}>
+              <div style={{width:8,height:8,borderRadius:'50%',background:col,boxShadow:sel?'0 0 8px '+col+'88':'none'}}/>{u.name}
+            </button>
+          )})}
+        </div>
+      )})}
+      </div>
+      {/* 알림시간설정 */}
+      <div style={{borderTop:'1px solid rgba(0,0,0,.08)',marginTop:8,paddingTop:12}}>
+        <button onClick={onSelectAlarmTime} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',border:'none',borderRadius:10,cursor:'pointer',background:isAlarmSelected?'rgba(255,64,129,.12)':'rgba(0,0,0,.03)',transition:'background .15s'}}>
+          <span style={{fontSize:13,fontWeight:isAlarmSelected?700:600,color:isAlarmSelected?'#ff4081':'#555'}}>⏰ 알림시간설정</span>
+          <span style={{fontSize:14,fontWeight:700,color:isAlarmSelected?'#ff4081':'#999'}}>{pad2(alarmTime.hour)}:{pad2(alarmTime.minute)}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AlarmTimePanel({alarmTime,onAlarmTimeChange}){
+  const[h,setH]=useState(alarmTime.hour);
+  const[m,setM]=useState(alarmTime.minute);
+  const[saved,setSaved]=useState(false);
+  const handleSave=()=>{onAlarmTimeChange(h,m);setSaved(true);setTimeout(()=>setSaved(false),1500)};
+  return(
+    <div style={{flex:1,minWidth:0}}>
+      <div className="glass-strong" style={{borderRadius:16,padding:24,borderLeft:'4px solid #ff4081'}}>
+        <div style={{fontSize:17,fontWeight:800,color:'#333',marginBottom:4}}>⏰ 알림시간설정</div>
+        <div style={{fontSize:12,color:'#999',marginBottom:20}}>모든 알림은 설정된 시간에 발송됩니다</div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,marginBottom:24}}>
+          <select value={h} onChange={e=>setH(Number(e.target.value))} style={{fontSize:28,fontWeight:800,padding:'12px 16px',borderRadius:12,border:'2px solid #eee',textAlign:'center',width:100,cursor:'pointer',color:'#333'}}>
+            {Array.from({length:24},(_,i)=>i).map(v=><option key={v} value={v}>{pad2(v)}</option>)}
+          </select>
+          <span style={{fontSize:32,fontWeight:900,color:'#333'}}>:</span>
+          <select value={m} onChange={e=>setM(Number(e.target.value))} style={{fontSize:28,fontWeight:800,padding:'12px 16px',borderRadius:12,border:'2px solid #eee',textAlign:'center',width:100,cursor:'pointer',color:'#333'}}>
+            {Array.from({length:60},(_,i)=>i).map(v=><option key={v} value={v}>{pad2(v)}</option>)}
+          </select>
+        </div>
+        <button onClick={handleSave} style={{width:'100%',padding:'12px',border:'none',borderRadius:12,cursor:'pointer',fontSize:15,fontWeight:700,background:saved?'#4CAF50':'#ff4081',color:'#fff',transition:'background .3s',boxShadow:saved?'0 0 15px #4CAF5088':'0 0 15px #ff408188'}}>
+          {saved?'✓ 저장 완료':'저장'}
+        </button>
+      </div>
+      <div className="glass-strong" style={{borderRadius:16,padding:16,marginTop:12}}>
+        <div style={{fontSize:13,color:'#888'}}>
+          <div style={{marginBottom:6}}>· 개별 생일 알림 (7일전, 3일전, 1일전, 당일)</div>
+          <div style={{marginBottom:6}}>· 매월 1일 월간 요약 알림</div>
+          <div>위 모든 알림이 설정된 시간에 발송됩니다.</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPanel({settings,selectedUnit,onCharToggle,onUnitToggle,alarmTime,onAlarmTimeChange}){
+  if(selectedUnit==='__ALARM_TIME__')return <AlarmTimePanel alarmTime={alarmTime} onAlarmTimeChange={onAlarmTimeChange}/>;
+  const unit=getUnit(selectedUnit);
+  if(!unit)return(<div className="glass-strong" style={{flex:1,borderRadius:16,padding:40,display:'flex',alignItems:'center',justifyContent:'center',color:'#999'}}><div style={{textAlign:'center'}}><IconSettings size={48} color="#ccc" style={{margin:'0 auto 12px'}}/><div>좌측에서 유닛을 선택하세요</div></div></div>);
+  const color=getUnitColor(unit.id),chars=getCharsByUnit(unit.id);
+  return(
+    <div style={{flex:1,minWidth:0}}>
+      <div className="glass-strong" style={{borderRadius:16,padding:16,marginBottom:12,borderLeft:'4px solid '+color}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div><div style={{fontSize:17,fontWeight:800,color:'#333'}}>{unit.name}</div><div style={{fontSize:12,color:'#999',marginTop:2}}>마스터 컨트롤 · {chars.length}명</div></div>
+          <UnitMasterRow settings={settings} unitId={unit.id} onUnitToggle={onUnitToggle}/>
+        </div>
+      </div>
+      <div className="glass-strong" style={{borderRadius:16,overflow:'hidden'}}>
+        {chars.map((c,i)=>(
+          <div key={c.id} className="fade-in" style={{position:'relative',overflow:'hidden',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderBottom:i<chars.length-1?'1px solid rgba(0,0,0,.05)':'none'}}>
+            <div style={{position:'absolute',right:160,top:-8,fontSize:80,fontWeight:900,color:color,opacity:.035,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{c.name.charAt(0)}</div>
+            <div style={{position:'relative',zIndex:1}}><div style={{fontSize:15,fontWeight:600,color:'#333'}}>{c.name}</div><div style={{fontSize:12,color:'#999',marginTop:2}}>{c.birthday.month}월 {c.birthday.day}일</div></div>
+            <div style={{position:'relative',zIndex:1}}><StageRow settings={settings} charId={c.id} unitId={c.unitId} onToggle={onCharToggle}/></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage(){
+  const[settings,setSettings]=useState(loadFromStorage);
+  const[selectedUnit,setSelectedUnit]=useState('UN001');
+  const[alarmTime,setAlarmTime]=useState(loadAlarmTime);
+  const handleCharToggle=useCallback((cid,stage)=>{setSettings(p=>{const n={...p,[cid]:{...p[cid],[stage]:!(p[cid]&&p[cid][stage])}};saveToStorage(n);return n})},[]);
+  const handleUnitToggle=useCallback((uid,stage)=>{setSettings(p=>{const allOn=computeUnitState(p,uid,stage);const v=!allOn;const n={...p};getCharsByUnit(uid).forEach(c=>{n[c.id]={...n[c.id],[stage]:v}});saveToStorage(n);return n})},[]);
+  const handleAlarmTimeChange=useCallback((h,m)=>{const t={hour:h,minute:m};setAlarmTime(t);saveAlarmTime(t)},[]);
+  return(
+    <div style={{padding:20,maxWidth:900,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}><IconBell size={24} color="#333"/><h1 style={{margin:0,fontSize:22,fontWeight:800,color:'#333'}}>알림 설정</h1></div>
+      <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+        <Sidebar selectedUnit={selectedUnit} onSelectUnit={setSelectedUnit} alarmTime={alarmTime} onSelectAlarmTime={()=>setSelectedUnit('__ALARM_TIME__')}/>
+        <SettingsPanel settings={settings} selectedUnit={selectedUnit} onCharToggle={handleCharToggle} onUnitToggle={handleUnitToggle} alarmTime={alarmTime} onAlarmTimeChange={handleAlarmTimeChange}/>
+      </div>
+    </div>
+  );
+}
+
+function NavBar({page,onNavigate}){
+  return(
+    <nav className="glass" style={{position:'sticky',top:0,zIndex:100,display:'flex',justifyContent:'center',gap:4,padding:'10px 16px',borderBottom:'1px solid rgba(255,255,255,.2)'}}>
+      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'settings',label:'설정',Ic:IconSettings}].map(({id,label,Ic})=>{const a=page===id;return(
+        <button key={id} onClick={()=>onNavigate(id)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 20px',border:'none',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:a?700:500,color:a?'#ff4081':'#666',background:a?'rgba(255,64,129,.1)':'transparent',transition:'all .2s'}}>
+          <Ic size={18}/>{label}
+        </button>
+      )})}
+    </nav>
+  );
+}
+
+function App(){
+  const[page,setPage]=useState('dashboard');
+  return(<div className="stage-bg"><NavBar page={page} onNavigate={setPage}/>{page==='dashboard'?<Dashboard/>:<SettingsPage/>}</div>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+
+// Register Service Worker for PWA
+if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
+</script>
+</body>
+</html>

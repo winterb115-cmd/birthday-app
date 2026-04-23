@@ -1,20 +1,26 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
+import { rescheduleAllNotifications } from '@/src/services/NotificationScheduler';
+import {
+    initializeDefaultSettings,
+    loadSettings,
+    saveSettings,
+} from '@/src/services/NotificationSettingsManager';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+    // Catch any errors thrown by the Layout component.
+    ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
@@ -38,6 +44,38 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // App initialization: request permissions, load/initialize settings, schedule notifications
+  useEffect(() => {
+    if (!loaded) return;
+
+    async function initialize() {
+      // Request notification permissions (app works even if denied)
+      try {
+        await Notifications.requestPermissionsAsync();
+      } catch {
+        // Permission request failed — continue without notifications
+      }
+
+      // Load settings and initialize if needed
+      try {
+        const settings = await loadSettings();
+
+        if (!settings.isInitialized) {
+          const defaultSettings = initializeDefaultSettings();
+          await saveSettings(defaultSettings);
+          await rescheduleAllNotifications(defaultSettings);
+        } else {
+          await rescheduleAllNotifications(settings);
+        }
+      } catch {
+        // Initialization failed — app still works, notifications may not fire
+        console.error('App initialization failed');
+      }
+    }
+
+    initialize();
+  }, [loaded]);
+
   if (!loaded) {
     return null;
   }
@@ -52,7 +90,7 @@ function RootLayoutNav() {
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="+not-found" />
       </Stack>
     </ThemeProvider>
   );

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/></head>
+<body>
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<script>
+function draw(canvas) {
+  const s = canvas.width, ctx = canvas.getContext('2d');
+  // Background gradient
+  const g = ctx.createLinearGradient(0,0,s,s);
+  g.addColorStop(0,'#ff4081'); g.addColorStop(1,'#ff6b35');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(0,0,s,s,s*0.2);
+  ctx.fill();
+  // Cake emoji
+  ctx.font = `${s*0.5}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🎂', s/2, s/2);
+}
+draw(document.getElementById('c192'));
+draw(document.getElementById('c512'));
+// Download links
+document.getElementById('c192').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='icon-192.png';a.click()});
+document.getElementById('c512').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='icon-512.png';a.click()});
+</script>
+</body>
+</html>

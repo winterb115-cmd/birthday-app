@@ -171,17 +171,20 @@ function saveToStorage(s){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(s)
 function computeUnitState(s,uid,stage){return getCharsByUnit(uid).every(c=>s[c.id]&&s[c.id][stage]===true)}
 
 // ─── COMPONENTS ─────────────────────────────────────────
-function ToggleBtn({isOn,label,color,onClick}){
+const isMobile = window.innerWidth <= 640;
+
+function ToggleBtn({isOn,label,color,onClick,small}){
   const[b,setB]=useState(false);
-  return(<button onClick={()=>{setB(true);setTimeout(()=>setB(false),400);onClick()}} className={b?'bounce-click':''} style={{width:38,height:30,borderRadius:8,border:'none',cursor:'pointer',fontWeight:700,fontSize:13,transition:'all .2s',color:isOn?'#fff':'#999',background:isOn?color:'#e0e0e0',boxShadow:isOn?'0 0 15px '+color+'88, 0 2px 8px '+color+'44':'0 1px 3px rgba(0,0,0,.1)'}}>{label}</button>);
+  const sz = small ? {width:32,height:26,fontSize:11} : {width:38,height:30,fontSize:13};
+  return(<button onClick={()=>{setB(true);setTimeout(()=>setB(false),400);onClick()}} className={b?'bounce-click':''} style={{...sz,borderRadius:8,border:'none',cursor:'pointer',fontWeight:700,transition:'all .2s',color:isOn?'#fff':'#999',background:isOn?color:'#e0e0e0',boxShadow:isOn?'0 0 12px '+color+'66':'0 1px 3px rgba(0,0,0,.1)',flexShrink:0}}>{label}</button>);
 }
-function StageRow({settings,charId,unitId,onToggle}){
+function StageRow({settings,charId,unitId,onToggle,small}){
   const color=getUnitColor(unitId);
-  return(<div style={{display:'flex',gap:6}}>{STAGES.map(s=><ToggleBtn key={s} isOn={settings[charId]?settings[charId][s]:false} label={STAGE_LABELS[s]} color={color} onClick={()=>onToggle(charId,s)}/>)}</div>);
+  return(<div style={{display:'flex',gap:small?4:6,flexShrink:0}}>{STAGES.map(s=><ToggleBtn key={s} isOn={settings[charId]?settings[charId][s]:false} label={STAGE_LABELS[s]} color={color} onClick={()=>onToggle(charId,s)} small={small}/>)}</div>);
 }
-function UnitMasterRow({settings,unitId,onUnitToggle}){
+function UnitMasterRow({settings,unitId,onUnitToggle,small}){
   const color=getUnitColor(unitId);
-  return(<div style={{display:'flex',gap:6}}>{STAGES.map(s=><ToggleBtn key={s} isOn={computeUnitState(settings,unitId,s)} label={STAGE_LABELS[s]} color={color} onClick={()=>onUnitToggle(unitId,s)}/>)}</div>);
+  return(<div style={{display:'flex',gap:small?4:6,flexShrink:0}}>{STAGES.map(s=><ToggleBtn key={s} isOn={computeUnitState(settings,unitId,s)} label={STAGE_LABELS[s]} color={color} onClick={()=>onUnitToggle(unitId,s)} small={small}/>)}</div>);
 }
 
 function BirthdayCard({char:c,isBirthdayToday}){
@@ -292,25 +295,43 @@ function AlarmTimePanel({alarmTime,onAlarmTimeChange}){
   );
 }
 
+function MobileUnitSelector({selectedUnit,onSelectUnit,alarmTime,onSelectAlarmTime}){
+  const isAlarm=selectedUnit==='__ALARM_TIME__';
+  const allUnits=AGENCIES.flatMap(a=>UNITS.filter(u=>u.agencyId===a.id).map(u=>({...u,agencyName:a.name})));
+  return(
+    <div className="glass-strong" style={{borderRadius:12,padding:10,marginBottom:12}}>
+      <select value={selectedUnit} onChange={e=>{const v=e.target.value;if(v==='__ALARM_TIME__')onSelectAlarmTime();else onSelectUnit(v)}} style={{width:'100%',padding:'10px 12px',borderRadius:10,border:'2px solid #eee',fontSize:14,fontWeight:600,color:'#333',background:'#fff',cursor:'pointer'}}>
+        {allUnits.map(u=><option key={u.id} value={u.id}>{u.agencyName} › {u.name}</option>)}
+        <option value="__ALARM_TIME__">⏰ 알림시간설정 ({pad2(alarmTime.hour)}:{pad2(alarmTime.minute)})</option>
+      </select>
+    </div>
+  );
+}
+
 function SettingsPanel({settings,selectedUnit,onCharToggle,onUnitToggle,alarmTime,onAlarmTimeChange}){
   if(selectedUnit==='__ALARM_TIME__')return <AlarmTimePanel alarmTime={alarmTime} onAlarmTimeChange={onAlarmTimeChange}/>;
   const unit=getUnit(selectedUnit);
-  if(!unit)return(<div className="glass-strong" style={{flex:1,borderRadius:16,padding:40,display:'flex',alignItems:'center',justifyContent:'center',color:'#999'}}><div style={{textAlign:'center'}}><IconSettings size={48} color="#ccc" style={{margin:'0 auto 12px'}}/><div>좌측에서 유닛을 선택하세요</div></div></div>);
+  if(!unit)return(<div className="glass-strong" style={{flex:1,borderRadius:16,padding:40,display:'flex',alignItems:'center',justifyContent:'center',color:'#999'}}><div style={{textAlign:'center'}}><IconSettings size={48} color="#ccc" style={{margin:'0 auto 12px'}}/><div>유닛을 선택하세요</div></div></div>);
   const color=getUnitColor(unit.id),chars=getCharsByUnit(unit.id);
   return(
     <div style={{flex:1,minWidth:0}}>
-      <div className="glass-strong" style={{borderRadius:16,padding:16,marginBottom:12,borderLeft:'4px solid '+color}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div><div style={{fontSize:17,fontWeight:800,color:'#333'}}>{unit.name}</div><div style={{fontSize:12,color:'#999',marginTop:2}}>마스터 컨트롤 · {chars.length}명</div></div>
-          <UnitMasterRow settings={settings} unitId={unit.id} onUnitToggle={onUnitToggle}/>
+      <div className="glass-strong" style={{borderRadius:16,padding:isMobile?12:16,marginBottom:12,borderLeft:'4px solid '+color}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
+          <div style={{minWidth:0}}><div style={{fontSize:isMobile?15:17,fontWeight:800,color:'#333'}}>{unit.name}</div><div style={{fontSize:11,color:'#999',marginTop:2}}>마스터 컨트롤 · {chars.length}명</div></div>
+          <UnitMasterRow settings={settings} unitId={unit.id} onUnitToggle={onUnitToggle} small={isMobile}/>
         </div>
       </div>
       <div className="glass-strong" style={{borderRadius:16,overflow:'hidden'}}>
         {chars.map((c,i)=>(
-          <div key={c.id} className="fade-in" style={{position:'relative',overflow:'hidden',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 16px',borderBottom:i<chars.length-1?'1px solid rgba(0,0,0,.05)':'none'}}>
-            <div style={{position:'absolute',right:160,top:-8,fontSize:80,fontWeight:900,color:color,opacity:.035,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{c.name.charAt(0)}</div>
-            <div style={{position:'relative',zIndex:1}}><div style={{fontSize:15,fontWeight:600,color:'#333'}}>{c.name}</div><div style={{fontSize:12,color:'#999',marginTop:2}}>{c.birthday.month}월 {c.birthday.day}일</div></div>
-            <div style={{position:'relative',zIndex:1}}><StageRow settings={settings} charId={c.id} unitId={c.unitId} onToggle={onCharToggle}/></div>
+          <div key={c.id} className="fade-in" style={{position:'relative',overflow:'hidden',padding:isMobile?'10px 12px':'14px 16px',borderBottom:i<chars.length-1?'1px solid rgba(0,0,0,.05)':'none'}}>
+            <div style={{position:'absolute',right:isMobile?80:160,top:-8,fontSize:isMobile?60:80,fontWeight:900,color:color,opacity:.035,lineHeight:1,pointerEvents:'none',userSelect:'none'}}>{c.name.charAt(0)}</div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',position:'relative',zIndex:1,gap:8}}>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{fontSize:isMobile?13:15,fontWeight:600,color:'#333',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.name}</div>
+                <div style={{fontSize:11,color:'#999',marginTop:1}}>{c.birthday.month}월 {c.birthday.day}일</div>
+              </div>
+              <StageRow settings={settings} charId={c.id} unitId={c.unitId} onToggle={onCharToggle} small={isMobile}/>
+            </div>
           </div>
         ))}
       </div>
@@ -326,12 +347,19 @@ function SettingsPage(){
   const handleUnitToggle=useCallback((uid,stage)=>{setSettings(p=>{const allOn=computeUnitState(p,uid,stage);const v=!allOn;const n={...p};getCharsByUnit(uid).forEach(c=>{n[c.id]={...n[c.id],[stage]:v}});saveToStorage(n);return n})},[]);
   const handleAlarmTimeChange=useCallback((h,m)=>{const t={hour:h,minute:m};setAlarmTime(t);saveAlarmTime(t)},[]);
   return(
-    <div style={{padding:20,maxWidth:900,margin:'0 auto'}}>
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}><IconBell size={24} color="#333"/><h1 style={{margin:0,fontSize:22,fontWeight:800,color:'#333'}}>알림 설정</h1></div>
-      <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
-        <Sidebar selectedUnit={selectedUnit} onSelectUnit={setSelectedUnit} alarmTime={alarmTime} onSelectAlarmTime={()=>setSelectedUnit('__ALARM_TIME__')}/>
-        <SettingsPanel settings={settings} selectedUnit={selectedUnit} onCharToggle={handleCharToggle} onUnitToggle={handleUnitToggle} alarmTime={alarmTime} onAlarmTimeChange={handleAlarmTimeChange}/>
-      </div>
+    <div style={{padding:isMobile?12:20,maxWidth:900,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:isMobile?12:20}}><IconBell size={isMobile?20:24} color="#333"/><h1 style={{margin:0,fontSize:isMobile?18:22,fontWeight:800,color:'#333'}}>알림 설정</h1></div>
+      {isMobile ? (
+        <div>
+          <MobileUnitSelector selectedUnit={selectedUnit} onSelectUnit={setSelectedUnit} alarmTime={alarmTime} onSelectAlarmTime={()=>setSelectedUnit('__ALARM_TIME__')}/>
+          <SettingsPanel settings={settings} selectedUnit={selectedUnit} onCharToggle={handleCharToggle} onUnitToggle={handleUnitToggle} alarmTime={alarmTime} onAlarmTimeChange={handleAlarmTimeChange}/>
+        </div>
+      ) : (
+        <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+          <Sidebar selectedUnit={selectedUnit} onSelectUnit={setSelectedUnit} alarmTime={alarmTime} onSelectAlarmTime={()=>setSelectedUnit('__ALARM_TIME__')}/>
+          <SettingsPanel settings={settings} selectedUnit={selectedUnit} onCharToggle={handleCharToggle} onUnitToggle={handleUnitToggle} alarmTime={alarmTime} onAlarmTimeChange={handleAlarmTimeChange}/>
+        </div>
+      )}
     </div>
   );
 }

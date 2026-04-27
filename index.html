@@ -364,12 +364,95 @@ function SettingsPage(){
   );
 }
 
+const IconCalendar=p=>(
+  <svg xmlns="http://www.w3.org/2000/svg" width={p.size||20} height={p.size||20} viewBox="0 0 24 24" fill="none" stroke={p.color||'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline-block',verticalAlign:'middle',...(p.style||{})}}>
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+);
+
+function BirthdayCalendar(){
+  const[selMonth,setSelMonth]=useState(currentMonth);
+  const chars=useMemo(()=>CHARACTERS.filter(c=>c.birthday.month===selMonth).sort((a,b)=>a.birthday.day-b.birthday.day),[selMonth]);
+  const todayChars=selMonth===currentMonth?chars.filter(c=>c.birthday.day===currentDay):[];
+  const otherChars=selMonth===currentMonth?chars.filter(c=>c.birthday.day!==currentDay):chars;
+  return(
+    <div style={{padding:isMobile?12:20,maxWidth:600,margin:'0 auto'}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+        <IconCalendar size={24} color="#ff4081"/>
+        <h1 style={{margin:0,fontSize:isMobile?18:24,fontWeight:800,color:'#333'}}>생일보기</h1>
+      </div>
+      {/* 월 버튼 */}
+      <div className="glass-strong" style={{borderRadius:12,padding:isMobile?8:10,marginBottom:16}}>
+        <div style={{display:'flex',gap:isMobile?4:6,marginBottom:isMobile?4:6}}>
+          {[1,2,3,4,5,6].map(m=>{
+            const isActive=m===selMonth;
+            const count=CHARACTERS.filter(c=>c.birthday.month===m).length;
+            return(
+              <button key={m} onClick={()=>setSelMonth(m)} style={{
+                flex:1,padding:isMobile?'6px 0':'8px 0',border:'none',borderRadius:10,cursor:'pointer',
+                fontSize:isMobile?12:13,fontWeight:isActive?800:500,
+                color:isActive?'#fff':'#666',
+                background:isActive?'#ff4081':'transparent',
+                boxShadow:isActive?'0 0 12px #ff408166':'none',
+                transition:'all .2s',
+                display:'flex',flexDirection:'column',alignItems:'center',gap:1,
+              }}>
+                <span>{m}월</span>
+                <span style={{fontSize:10,opacity:.7}}>{count}명</span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{display:'flex',gap:isMobile?4:6}}>
+          {[7,8,9,10,11,12].map(m=>{
+            const isActive=m===selMonth;
+            const count=CHARACTERS.filter(c=>c.birthday.month===m).length;
+            return(
+              <button key={m} onClick={()=>setSelMonth(m)} style={{
+                flex:1,padding:isMobile?'6px 0':'8px 0',border:'none',borderRadius:10,cursor:'pointer',
+                fontSize:isMobile?12:13,fontWeight:isActive?800:500,
+                color:isActive?'#fff':'#666',
+                background:isActive?'#ff4081':'transparent',
+                boxShadow:isActive?'0 0 12px #ff408166':'none',
+                transition:'all .2s',
+                display:'flex',flexDirection:'column',alignItems:'center',gap:1,
+              }}>
+                <span>{m}월</span>
+                <span style={{fontSize:10,opacity:.7}}>{count}명</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {/* 캐릭터 목록 */}
+      {todayChars.length>0&&(
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:'#ff4081',marginBottom:10,letterSpacing:1}}>✨ TODAY'S BIRTHDAY ✨</div>
+          {todayChars.map(c=><BirthdayCard key={c.id} char={c} isBirthdayToday={true}/>)}
+        </div>
+      )}
+      {otherChars.length>0&&(
+        <div>
+          {selMonth===currentMonth&&<div style={{fontSize:13,fontWeight:600,color:'#888',marginBottom:10}}>이번 달 생일</div>}
+          {otherChars.map(c=><BirthdayCard key={c.id} char={c} isBirthdayToday={false}/>)}
+        </div>
+      )}
+      {chars.length===0&&(
+        <div className="glass-strong" style={{borderRadius:16,padding:40,textAlign:'center',color:'#999'}}>
+          <IconCake size={48} color="#ccc" style={{margin:'0 auto 12px'}}/>
+          <div style={{fontSize:16}}>{selMonth}월에는 생일인 캐릭터가 없습니다</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NavBar({page,onNavigate}){
   return(
     <nav className="glass" style={{position:'sticky',top:0,zIndex:100,display:'flex',justifyContent:'center',gap:4,padding:'10px 16px',borderBottom:'1px solid rgba(255,255,255,.2)'}}>
-      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'settings',label:'설정',Ic:IconSettings}].map(({id,label,Ic})=>{const a=page===id;return(
-        <button key={id} onClick={()=>onNavigate(id)} style={{display:'flex',alignItems:'center',gap:6,padding:'8px 20px',border:'none',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:a?700:500,color:a?'#ff4081':'#666',background:a?'rgba(255,64,129,.1)':'transparent',transition:'all .2s'}}>
-          <Ic size={18}/>{label}
+      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'calendar',label:'생일보기',Ic:IconCalendar},{id:'settings',label:'설정',Ic:IconSettings}].map(({id,label,Ic})=>{const a=page===id;return(
+        <button key={id} onClick={()=>onNavigate(id)} style={{display:'flex',alignItems:'center',gap:isMobile?4:6,padding:isMobile?'8px 12px':'8px 20px',border:'none',borderRadius:12,cursor:'pointer',fontSize:isMobile?12:14,fontWeight:a?700:500,color:a?'#ff4081':'#666',background:a?'rgba(255,64,129,.1)':'transparent',transition:'all .2s'}}>
+          <Ic size={isMobile?16:18}/>{label}
         </button>
       )})}
     </nav>
@@ -378,7 +461,7 @@ function NavBar({page,onNavigate}){
 
 function App(){
   const[page,setPage]=useState('dashboard');
-  return(<div className="stage-bg"><NavBar page={page} onNavigate={setPage}/>{page==='dashboard'?<Dashboard/>:<SettingsPage/>}</div>);
+  return(<div className="stage-bg"><NavBar page={page} onNavigate={setPage}/>{page==='dashboard'?<Dashboard/>:page==='calendar'?<BirthdayCalendar/>:<SettingsPage/>}</div>);
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));

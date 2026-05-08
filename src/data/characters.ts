@@ -9,7 +9,7 @@ export const CHARACTERS: readonly Character[] = [
   { id: 'CH006', name: '아케호시 스바루', birthday: { month: 6, day: 22 }, agencyId: 'AG001', unitId: 'UN002' },
   { id: 'CH007', name: '유우키 마코토', birthday: { month: 4, day: 30 }, agencyId: 'AG001', unitId: 'UN002' },
   { id: 'CH008', name: '이사라 마오', birthday: { month: 3, day: 16 }, agencyId: 'AG001', unitId: 'UN002' },
-  { id: 'CH009', name: '냐구모 테토라', birthday: { month: 6, day: 15 }, agencyId: 'AG001', unitId: 'UN003' },
+  { id: 'CH009', name: '나구모 테토라', birthday: { month: 6, day: 15 }, agencyId: 'AG001', unitId: 'UN003' },
   { id: 'CH010', name: '타카미네 미도리', birthday: { month: 8, day: 29 }, agencyId: 'AG001', unitId: 'UN003' },
   { id: 'CH011', name: '센고쿠 시노부', birthday: { month: 6, day: 9 }, agencyId: 'AG001', unitId: 'UN003' },
   { id: 'CH012', name: '모리사와 치아키', birthday: { month: 9, day: 18 }, agencyId: 'AG001', unitId: 'UN003' },

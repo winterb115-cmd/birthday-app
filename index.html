@@ -103,7 +103,7 @@ const CHARACTERS=[
 {id:'CH006',name:'아케호시 스바루',birthday:{month:6,day:22},agencyId:'AG001',unitId:'UN002'},
 {id:'CH007',name:'유우키 마코토',birthday:{month:4,day:30},agencyId:'AG001',unitId:'UN002'},
 {id:'CH008',name:'이사라 마오',birthday:{month:3,day:16},agencyId:'AG001',unitId:'UN002'},
-{id:'CH009',name:'냐구모 테토라',birthday:{month:6,day:15},agencyId:'AG001',unitId:'UN003'},
+{id:'CH009',name:'나구모 테토라',birthday:{month:6,day:15},agencyId:'AG001',unitId:'UN003'},
 {id:'CH010',name:'타카미네 미도리',birthday:{month:8,day:29},agencyId:'AG001',unitId:'UN003'},
 {id:'CH011',name:'센고쿠 시노부',birthday:{month:6,day:9},agencyId:'AG001',unitId:'UN003'},
 {id:'CH012',name:'모리사와 치아키',birthday:{month:9,day:18},agencyId:'AG001',unitId:'UN003'},
@@ -189,6 +189,7 @@ function UnitMasterRow({settings,unitId,onUnitToggle,small}){
 
 function BirthdayCard({char:c,isBirthdayToday}){
   const unit=getUnit(c.unitId),color=getUnitColor(c.unitId),initial=c.name.charAt(0);
+  
   const daysLeft=(()=>{const bd=new Date(today.getFullYear(),c.birthday.month-1,c.birthday.day);if(bd<today&&!(bd.getMonth()===today.getMonth()&&bd.getDate()===today.getDate()))bd.setFullYear(bd.getFullYear()+1);return Math.ceil((bd-new Date(today.getFullYear(),today.getMonth(),today.getDate()))/864e5)})();
   return(
     <div className={'fade-in '+(isBirthdayToday?'rainbow-border':'')} style={{position:'relative',overflow:'hidden',borderRadius:16,padding:20,background:isBirthdayToday?'linear-gradient(135deg,rgba(255,255,255,.85),rgba(255,240,245,.9))':'rgba(255,255,255,.65)',backdropFilter:'blur(12px)',WebkitBackdropFilter:'blur(12px)',border:isBirthdayToday?undefined:'1px solid rgba(255,255,255,.5)',boxShadow:isBirthdayToday?undefined:'0 4px 20px rgba(0,0,0,.06)',marginBottom:12}}>
@@ -450,7 +451,7 @@ function BirthdayCalendar(){
 function NavBar({page,onNavigate}){
   return(
     <nav className="glass" style={{position:'sticky',top:0,zIndex:100,display:'flex',justifyContent:'center',gap:4,padding:'10px 16px',borderBottom:'1px solid rgba(255,255,255,.2)'}}>
-      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'calendar',label:'생일보기',Ic:IconCalendar},{id:'settings',label:'설정',Ic:IconSettings}].map(({id,label,Ic})=>{const a=page===id;return(
+      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'calendar',label:'생일보기',Ic:IconCalendar}].map(({id,label,Ic})=>{const a=page===id;return(
         <button key={id} onClick={()=>onNavigate(id)} style={{display:'flex',alignItems:'center',gap:isMobile?4:6,padding:isMobile?'8px 12px':'8px 20px',border:'none',borderRadius:12,cursor:'pointer',fontSize:isMobile?12:14,fontWeight:a?700:500,color:a?'#ff4081':'#666',background:a?'rgba(255,64,129,.1)':'transparent',transition:'all .2s'}}>
           <Ic size={isMobile?16:18}/>{label}
         </button>

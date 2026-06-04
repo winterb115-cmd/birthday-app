@@ -698,26 +698,34 @@ function App(){
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 
-// Register Service Worker with update detection
+// Register Service Worker with iOS PWA standalone update detection
 if('serviceWorker' in navigator){
+  let swRegistration=null;
+
   navigator.serviceWorker.register('/sw.js').then(registration=>{
-    // 앱 시작 시 업데이트 확인
-    registration.update();
+    swRegistration=registration;
+    // 앱 시작 시 즉시 업데이트 확인
+    registration.update().catch(()=>{});
 
     // 새 서비스 워커 발견 시
     registration.addEventListener('updatefound',()=>{
       const newWorker=registration.installing;
       if(!newWorker)return;
       newWorker.addEventListener('statechange',()=>{
-        if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-          // 새 버전이 대기 중 → 토스트 표시
-          showUpdateToast(registration);
+        // iOS standalone에서는 controller가 null일 수 있으므로 조건 완화
+        if(newWorker.state==='installed'){
+          if(navigator.serviceWorker.controller){
+            showUpdateToast(registration);
+          }else{
+            // 최초 설치 후 즉시 활성화 (첫 방문)
+            newWorker.postMessage({action:'skipWaiting'});
+          }
         }
       });
     });
 
     // 이미 대기 중인 워커가 있으면 즉시 토스트
-    if(registration.waiting&&navigator.serviceWorker.controller){
+    if(registration.waiting){
       showUpdateToast(registration);
     }
   }).catch(()=>{});
@@ -726,6 +734,23 @@ if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{
     if(!refreshing){refreshing=true;window.location.reload()}
+  });
+
+  // iOS PWA: 앱이 포그라운드로 돌아올 때 업데이트 체크 (최초 1회만)
+  let hasCheckedOnResume=false;
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible'&&swRegistration&&!hasCheckedOnResume){
+      hasCheckedOnResume=true;
+      swRegistration.update().catch(()=>{});
+    }
+  });
+
+  // iOS PWA: pageshow 이벤트 (bfcache에서 복원될 때, 최초 1회)
+  window.addEventListener('pageshow',e=>{
+    if(e.persisted&&swRegistration&&!hasCheckedOnResume){
+      hasCheckedOnResume=true;
+      swRegistration.update().catch(()=>{});
+    }
   });
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'birthday-app-v3';
+const CACHE_NAME = 'birthday-app-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -38,25 +38,39 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: Cache First, Network Fallback
+// Fetch: HTML(네비게이션)은 Network-First, 나머지는 Cache-First
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        // 성공한 응답은 캐시에 저장 (GET만)
-        if (response.ok && event.request.method === 'GET') {
+  const request = event.request;
+
+  // HTML 페이지 요청 (네비게이션) → Network First
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request).then(response => {
+        // 네트워크 성공 → 캐시 갱신 후 응답
+        if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }
         return response;
       }).catch(() => {
-        // 오프라인 fallback
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+        // 오프라인 → 캐시에서 서빙
+        return caches.match('/index.html');
+      })
+    );
+    return;
+  }
+
+  // 그 외 (JS, CSS, 이미지, CDN) → Cache First
+  event.respondWith(
+    caches.match(request).then(cached => {
+      if (cached) return cached;
+      return fetch(request).then(response => {
+        if (response.ok && request.method === 'GET') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
         }
-        return new Response('Offline', { status: 503 });
-      });
+        return response;
+      }).catch(() => new Response('Offline', { status: 503 }));
     })
   );
 });

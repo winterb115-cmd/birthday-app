@@ -16,9 +16,7 @@ const CDN_ASSETS = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      // 정적 파일은 반드시 캐싱
       const staticPromise = cache.addAll(STATIC_ASSETS);
-      // CDN 파일은 실패해도 설치 진행 (네트워크 없을 수 있음)
       const cdnPromise = Promise.allSettled(
         CDN_ASSETS.map(url => fetch(url).then(r => {
           if (r.ok) return cache.put(url, r);
@@ -27,7 +25,7 @@ self.addEventListener('install', event => {
       return Promise.all([staticPromise, cdnPromise]);
     })
   );
-  self.skipWaiting();
+  // skipWaiting은 사용자 확인 후 message로 호출됨
 });
 
 // Activate: 이전 캐시 삭제
@@ -61,4 +59,11 @@ self.addEventListener('fetch', event => {
       });
     })
   );
+});
+
+// Message: 클라이언트에서 skipWaiting 요청 시 즉시 활성화
+self.addEventListener('message', event => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });

@@ -695,8 +695,52 @@ function App(){
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 
-// Register Service Worker for PWA
-if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}
+// Register Service Worker with update detection
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(registration=>{
+    // 앱 시작 시 업데이트 확인
+    registration.update();
+
+    // 새 서비스 워커 발견 시
+    registration.addEventListener('updatefound',()=>{
+      const newWorker=registration.installing;
+      if(!newWorker)return;
+      newWorker.addEventListener('statechange',()=>{
+        if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+          // 새 버전이 대기 중 → 토스트 표시
+          showUpdateToast(registration);
+        }
+      });
+    });
+
+    // 이미 대기 중인 워커가 있으면 즉시 토스트
+    if(registration.waiting&&navigator.serviceWorker.controller){
+      showUpdateToast(registration);
+    }
+  }).catch(()=>{});
+
+  // 새 워커가 제어권 획득 시 리로드
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!refreshing){refreshing=true;window.location.reload()}
+  });
+}
+
+function showUpdateToast(registration){
+  if(document.getElementById('update-toast'))return;
+  const toast=document.createElement('div');
+  toast.id='update-toast';
+  toast.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;padding:14px 20px;border-radius:24px;background:rgba(15,23,42,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:flex;align-items:center;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.3);animation:fadeIn .4s ease-out;max-width:90vw';
+  toast.innerHTML=`
+    <span style="color:#f1f5f9;font-size:13px;font-weight:500">새 버전이 있습니다</span>
+    <button id="update-btn" style="padding:8px 16px;border:none;border-radius:16px;background:#f43f5e;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 0 12px rgba(244,63,94,.4)">업데이트</button>
+  `;
+  document.body.appendChild(toast);
+  document.getElementById('update-btn').addEventListener('click',()=>{
+    if(registration.waiting){registration.waiting.postMessage({action:'skipWaiting'})}
+    toast.remove();
+  });
+}
 </script>
 </body>
 </html>

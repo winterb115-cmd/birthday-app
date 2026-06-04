@@ -316,8 +316,11 @@ function BottomSheet({char:c,onClose}){
             </div>
             <div style={{fontSize:14,color:'#555'}}>
               <span style={{fontWeight:600}}>소속:</span>{' '}
+              <span style={{color:'#555'}}>{agency?agency.name:''}</span>
+            </div>
+            <div style={{fontSize:14,color:'#555'}}>
+              <span style={{fontWeight:600}}>유닛:</span>{' '}
               <span style={{display:'inline-block',padding:'2px 8px',borderRadius:12,background:color+'22',color:color,fontSize:12,fontWeight:600,border:'1px solid '+color+'44'}}>{unit?unit.name:''}</span>
-              {' '}<span style={{color:'#999'}}>({agency?agency.name:''})</span>
             </div>
             {circleNames.length>0&&(
               <div style={{fontSize:14,color:'#555'}}>
@@ -606,12 +609,12 @@ function GroupPage(){
     <div style={{padding:isMobile?12:20,maxWidth:700,margin:'0 auto'}}>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
         <IconUsers size={24} color="#ff4081"/>
-        <h1 style={{margin:0,fontSize:isMobile?18:24,fontWeight:800,color:'#333'}}>그룹/소속</h1>
+        <h1 style={{margin:0,fontSize:isMobile?18:24,fontWeight:800,color:'#333'}}>유닛/소속</h1>
       </div>
 
       {/* Segment Toggle */}
       <div className="glass-strong" style={{borderRadius:12,padding:4,marginBottom:12,display:'flex',gap:4}}>
-        {[{k:'unit',l:'그룹별'},{k:'circle',l:'서클별'},{k:'ambassador',l:'앰버서더별'}].map(({k,l})=>(
+        {[{k:'unit',l:'유닛별'},{k:'circle',l:'서클별'},{k:'ambassador',l:'앰버서더별'}].map(({k,l})=>(
           <button key={k} onClick={()=>{setMode(k);setSearch('');setOpenIds(new Set())}} style={{flex:1,padding:'10px 0',border:'none',borderRadius:10,cursor:'pointer',fontSize:isMobile?12:14,fontWeight:mode===k?700:500,color:mode===k?'#fff':'#666',background:mode===k?'#ff4081':'transparent',boxShadow:mode===k?'0 0 12px #ff408166':'none',transition:'all .2s'}}>
             {l}
           </button>
@@ -671,7 +674,7 @@ function GroupPage(){
 function NavBar({page,onNavigate}){
   return(
     <nav className="glass" style={{position:'sticky',top:0,zIndex:100,display:'flex',justifyContent:'center',gap:4,padding:'10px 16px',borderBottom:'1px solid rgba(255,255,255,.2)'}}>
-      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'calendar',label:'생일보기',Ic:IconCalendar},{id:'groups',label:'그룹/소속',Ic:IconUsers}].map(({id,label,Ic})=>{const a=page===id;return(
+      {[{id:'dashboard',label:'대시보드',Ic:IconHome},{id:'calendar',label:'생일보기',Ic:IconCalendar},{id:'groups',label:'유닛/소속',Ic:IconUsers}].map(({id,label,Ic})=>{const a=page===id;return(
         <button key={id} onClick={()=>onNavigate(id)} style={{display:'flex',alignItems:'center',gap:isMobile?4:6,padding:isMobile?'8px 10px':'8px 20px',border:'none',borderRadius:12,cursor:'pointer',fontSize:isMobile?11:14,fontWeight:a?700:500,color:a?'#ff4081':'#666',background:a?'rgba(255,64,129,.1)':'transparent',transition:'all .2s'}}>
           <Ic size={isMobile?16:18}/>{label}
         </button>

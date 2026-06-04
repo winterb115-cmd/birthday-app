@@ -18,7 +18,7 @@ export const AGENCIES: readonly Agency[] = [
   },
   {
     id: 'AG004',
-    name: 'New Dimention',
+    name: 'New Dimension',
     unitIds: ['UN013', 'UN014', 'UN015', 'UN016'],
   },
   {

@@ -698,6 +698,91 @@ function App(){
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 
+// ─── CONFETTI ENGINE (no external library) ──────────────
+(function(){
+  const CONFETTI_KEY='confetti_last_fired';
+  const todayStr=new Date().toISOString().slice(0,10);
+
+  // 조건 B: 당일 최초 1회 체크
+  if(localStorage.getItem(CONFETTI_KEY)===todayStr)return;
+
+  // 조건 A: 오늘 생일자 존재 확인
+  const todayMonth=new Date().getMonth()+1;
+  const todayDay=new Date().getDate();
+  const hasBirthday=CHARACTERS.some(c=>c.birthday.month===todayMonth&&c.birthday.day===todayDay);
+  if(!hasBirthday)return;
+
+  // 당일 기록
+  localStorage.setItem(CONFETTI_KEY,todayStr);
+
+  // Canvas 생성
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:500';
+  document.body.appendChild(canvas);
+  const ctx=canvas.getContext('2d');
+
+  function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight}
+  resize();
+  window.addEventListener('resize',resize);
+
+  // 파티클 생성
+  const COLORS=['#ff4081','#ff6b35','#FFD700','#4CAF50','#2196F3','#9C27B0','#FF9800','#E91E63','#00BCD4','#8BC34A'];
+  const PARTICLE_COUNT=80;
+  const particles=[];
+
+  for(let i=0;i<PARTICLE_COUNT;i++){
+    particles.push({
+      x:Math.random()*canvas.width,
+      y:Math.random()*canvas.height*-0.5-20,
+      w:Math.random()*8+4,
+      h:Math.random()*6+3,
+      color:COLORS[Math.floor(Math.random()*COLORS.length)],
+      vx:(Math.random()-0.5)*3,
+      vy:Math.random()*3+2,
+      rot:Math.random()*360,
+      rotSpeed:(Math.random()-0.5)*8,
+      opacity:1,
+      decay:Math.random()*0.003+0.002,
+    });
+  }
+
+  // 렌더 루프
+  let animId;
+  function render(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive=0;
+    for(const p of particles){
+      if(p.opacity<=0)continue;
+      alive++;
+      p.x+=p.vx;
+      p.vy+=0.08; // gravity
+      p.y+=p.vy;
+      p.rot+=p.rotSpeed;
+      p.opacity-=p.decay;
+      if(p.opacity<0)p.opacity=0;
+
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.globalAlpha=p.opacity;
+      ctx.fillStyle=p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    }
+    if(alive>0){animId=requestAnimationFrame(render)}
+    else{cleanup()}
+  }
+
+  function cleanup(){
+    cancelAnimationFrame(animId);
+    window.removeEventListener('resize',resize);
+    canvas.remove();
+  }
+
+  // 약간 딜레이 후 시작 (앱 렌더링 완료 대기)
+  setTimeout(()=>{render()},600);
+})();
+
 // Register Service Worker with iOS PWA standalone update detection
 if('serviceWorker' in navigator){
   let swRegistration=null;

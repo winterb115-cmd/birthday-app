@@ -703,17 +703,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
   const CONFETTI_KEY='confetti_last_fired';
   const todayStr=new Date().toISOString().slice(0,10);
 
-  // 조건 B: 당일 최초 1회 체크
-  if(localStorage.getItem(CONFETTI_KEY)===todayStr)return;
-
   // 조건 A: 오늘 생일자 존재 확인
   const todayMonth=new Date().getMonth()+1;
   const todayDay=new Date().getDate();
   const hasBirthday=CHARACTERS.some(c=>c.birthday.month===todayMonth&&c.birthday.day===todayDay);
   if(!hasBirthday)return;
-
-  // 당일 기록
-  localStorage.setItem(CONFETTI_KEY,todayStr);
 
   // Canvas 생성
   const canvas=document.createElement('canvas');
